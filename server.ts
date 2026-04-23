@@ -91,31 +91,52 @@ async function startServer() {
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== 'production') {
+    const basePath = process.env.VITE_BASE_PATH || '/';
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
+      base: basePath
     });
-    app.use(vite.middlewares);
+    
+    console.log(`[Development] Vite Middleware active at: ${basePath}`);
+    app.use(basePath, vite.middlewares);
   } else {
     const distPath = path.join(__dirname, 'dist');
     const basePath = process.env.VITE_BASE_PATH || '/';
     
-    // Serve static files from the base path
-    app.use(basePath, express.static(distPath));
-    
-    // Handle SPA routing: any request within the base path that isn't a file 
-    // should serve index.html
-    const wildcardPath = basePath.endsWith('/') ? `${basePath}*` : `${basePath}/*`;
-    app.get(wildcardPath, (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
-    });
+    console.log(`[Production] Serving from: ${distPath}`);
+    console.log(`[Production] Base Path: ${basePath}`);
 
-    // Fallback for root if base path is different
-    if (basePath !== '/') {
-      app.get('/', (req, res) => {
-        res.redirect(basePath);
-      });
+    // Verify dist directory exists to help user debug
+    if (!fs.existsSync(distPath)) {
+      console.warn(`WARNING: 'dist' directory not found at ${distPath}. Did you run 'npm run build'?`);
     }
+
+    // Serve static files from the base path
+    app.use(basePath, express.static(distPath, {
+      index: 'index.html',
+      // Ensure we don't accidentally return 403 for directories
+      directoryDotFiles: 'ignore'
+    }));
+    
+    // Handle SPA routing for the subpath
+    // This catches everything under the subpath and returns index.html
+    app.get(`${basePath}*`, (req, res) => {
+      const indexPath = path.join(distPath, 'index.html');
+      if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+      } else {
+        res.status(404).send('Build files missing. Please run "npm run build".');
+      }
+    });
+  }
+
+  // Fallback for root if base path is different (e.g. redirect / to /fp-monitor/)
+  const basePath = process.env.VITE_BASE_PATH || '/';
+  if (basePath !== '/') {
+    app.get('/', (req, res) => {
+      res.redirect(basePath);
+    });
   }
 
   app.listen(PORT, '0.0.0.0', () => {
