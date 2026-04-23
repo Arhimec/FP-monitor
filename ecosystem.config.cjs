@@ -10,7 +10,7 @@ module.exports = {
       interpreter_args: '--import tsx',
       env: {
         NODE_ENV: 'production',
-        PORT: 3000,
+        PORT: 3035,
         VITE_BASE_PATH: '/fp-monitor/'
       }
     }
