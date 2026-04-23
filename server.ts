@@ -98,14 +98,29 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(__dirname, 'dist');
-    app.use(express.static(distPath));
-    app.get('*', (req, res) => {
+    const basePath = process.env.VITE_BASE_PATH || '/';
+    
+    // Serve static files from the base path
+    app.use(basePath, express.static(distPath));
+    
+    // Handle SPA routing: any request within the base path that isn't a file 
+    // should serve index.html
+    const wildcardPath = basePath.endsWith('/') ? `${basePath}*` : `${basePath}/*`;
+    app.get(wildcardPath, (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
+
+    // Fallback for root if base path is different
+    if (basePath !== '/') {
+      app.get('/', (req, res) => {
+        res.redirect(basePath);
+      });
+    }
   }
 
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`Server is externally accessible at port ${PORT}`);
+    console.log(`Development URL: ${process.env.APP_URL || 'http://localhost:3000'}`);
   });
 }
 
