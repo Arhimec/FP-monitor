@@ -10,7 +10,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = 3000;
+const PORT = 3035;
 const DATA_DIR = path.join(__dirname, 'data');
 
 // Ensure data directory exists
@@ -141,7 +141,7 @@ async function startServer() {
 
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server is externally accessible at port ${PORT}`);
-    console.log(`Development URL: ${process.env.APP_URL || 'http://localhost:3000'}`);
+    console.log(`Development URL: ${process.env.APP_URL || 'http://localhost:3035'}`);
   });
 }
 
